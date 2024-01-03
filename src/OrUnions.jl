@@ -5,7 +5,7 @@ using MacroTools
 export @orunion, ∨
 
 @inline ∨(@nospecialize(t::Type), @nospecialize(types::Type...)) = Union{t, types...}
-@inline |(@nospecialize(t::Type), @nospecialize(types::Type...)) = Union{t, types...}
+|(::Type{A}, ::Type{B}) where {A,B} = Union{A, B}
 
 # Fallback method forwarding
 @inline |(@nospecialize(args...)) = Base.:|(args...)
