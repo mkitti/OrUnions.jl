@@ -6,14 +6,18 @@
 
 OrUnions.jl is a prototype Julia package to implement using either the operators `|` and `∨` (\vee) to create a `Union` to mimic the syntax of Scala 3, TypeScript, or Python. These languages create union types using the `|` operator. This package does not define `Base.:|(t::Type, types::Type...)` because this would be committing type piracy. Rather this package provides the option of using either `∨` or the macro `@orunion`.
 
-1. OrUnions.jl defines `∨(t::Type, types::Type...) = Union{t, types...}` and exports the operator.
-2. OrUnions.jl defines the macro `@orunion`, which allows for the use of `|` or `∨` without parentheses in type delcaration expressions.
+1. OrUnions.jl defines `@inline ∨(@nospecialize(t::Type), @nospecialize(types::Type...)) = Union{t, types...}` and exports the operator.
+2. OrUnions.jl defines `@inline OrUnions.:|(@nospecialize(t::Type), @nospecialize(types::Type...)) = Union{t, types...}` and does *NOT* export the operator.
+3. OrUnions.jl also defines forwarding of `OrUnions.:|` `Base.:|`: `@inline OrUnions.:|(@nospecialize(args...)) = Base.:|(args...)`.
+4. OrUnions.jl defines the macro `@orunion`, which allows for the use of `|` or `∨` without parentheses in type delcaration expressions.
 
 ## Operator Precedence
 
-The type declaration operator `::` takes precedence before the or operators, [`|`](https://github.com/JuliaLang/JuliaSyntax.jl/blob/a6f2d1580f7bbad11822033e8c83e607aa31f100/src/kinds.jl#L632) and [`∨`](https://github.com/JuliaLang/JuliaSyntax.jl/blob/a6f2d1580f7bbad11822033e8c83e607aa31f100/src/kinds.jl#L634), in Julia. As a consequence of this, the following expression will produce an error.
+The type declaration operator `::` takes precedence before the "or" operators, [`|`](https://github.com/JuliaLang/JuliaSyntax.jl/blob/a6f2d1580f7bbad11822033e8c83e607aa31f100/src/kinds.jl#L632) and [`∨`](https://github.com/JuliaLang/JuliaSyntax.jl/blob/a6f2d1580f7bbad11822033e8c83e607aa31f100/src/kinds.jl#L634), in Julia. As a consequence of this, the following expression will produce an error.
 
 ```julia
+julia> using OrUnions
+
 julia> 0x5::UInt8 ∨ Int8
 ERROR: MethodError: no method matching ∨(::UInt8, ::Type{Int8})
 ```
@@ -33,6 +37,8 @@ julia> 0x5::∨(UInt8, Int8)
 The recommended way to use this package is the `∨` infix operator with parentheses in function definitions. The implementation is a relatively simple definition of an infix operator.
 
 ```julia
+julia> using OrUnions
+
 julia> f(x::(Int8 ∨ UInt8 ∨ Int)) = x
 f (generic function with 1 method)
 
@@ -104,6 +110,33 @@ julia> @macroexpand @orunion bar(x::Int8 | UInt8, y::Int16 | UInt16, z::(Int8 | 
 julia> methods(@orunion (x::Int8 | UInt8)->5)
 # 1 method for anonymous function "#35":
  [1] (::var"#35#36")(x::Union{Int8, UInt8})
+```
+
+## Using `OrUnion.:|`
+
+While `OrUnion.:|` is not exported, the definition can be used in your current module's namespace before `|` is used by explicitly by `using` the symbol as follows.
+
+```julia
+julia> using OrUnions: |
+
+julia> Int8 | UInt8
+Union{Int8, UInt8}
+
+julia> 1 | 2
+3
+```
+
+If you use `|` before explicitly declaring `using OrUnions: |`, this fail.
+
+```julia
+julia> true | false
+true
+
+julia> using OrUnions: |
+WARNING: ignoring conflicting import of OrUnions.| into Main
+
+julia> Int8 | UInt8
+ERROR: MethodError: no method matching |(::Type{Int8}, ::Type{UInt8})
 ```
 
 ## Discussion

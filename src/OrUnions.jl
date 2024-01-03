@@ -4,7 +4,11 @@ using MacroTools
 
 export @orunion, ∨
 
-∨(t::Type, types::Type...) = Union{t, types...}
+@inline ∨(@nospecialize(t::Type), @nospecialize(types::Type...)) = Union{t, types...}
+@inline |(@nospecialize(t::Type), @nospecialize(types::Type...)) = Union{t, types...}
+
+# Fallback method forwarding
+@inline |(@nospecialize(args...)) = Base.:|(args...)
 
 macro orunion(ex)
     esc(macro_orunion!(ex))

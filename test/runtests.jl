@@ -1,4 +1,5 @@
 using OrUnions
+using OrUnions: |
 using Test
 
 @testset "OrUnions.jl" begin
@@ -36,4 +37,14 @@ using Test
 
     # TODO:
     # @test methods(@orunion((x::Int8 | Int16)::(Int8 ∨ Int16) -> x))[1].sig.parameters[2] == Int8 ∨ Int16
+
+    # Test forwarding of OrUnions.:| to Base.:|
+    @test 1 | 2 == 3
+    @test 1 | 3 == 3
+    @test 2 | 3 == 3
+    @test 0x8 | 0x10 == 0x18
+    @test ismissing(5 | missing)
+    @test ismissing(missing | 5)
+    @test ismissing(|(missing))
+    @test big"5" | big"7" == 7
 end
