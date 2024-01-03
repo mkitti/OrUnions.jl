@@ -1,0 +1,13 @@
+name = "OrUnions"
+uuid = "77ebc1cc-e1e3-48f0-8d51-7fefb2a542f1"
+authors = ["Mark Kittisopikul <markkitt@gmail.com> and contributors"]
+version = "1.0.0-DEV"
+
+[compat]
+julia = "1"
+
+[extras]
+Test = "8dfed614-e22c-5e08-85e1-65c5234f0b40"
+
+[targets]
+test = ["Test"]
