@@ -58,6 +58,16 @@ julia> methods(g)
 
 Because of the parentheses, the resulting syntax differs from that of other languages.
 
+## `∨` operator in struct definitions
+
+`\vee` can also be used with `TypeVar`.
+
+```julia
+struct MyType{T <: Number}
+   x::(T ∨ Nothing)
+end
+```
+
 ## The macro `@orunion`
 
 The macro `@orunion` allows for the use of either `|` or `∨` without parentheses.
@@ -110,6 +120,51 @@ julia> @macroexpand @orunion bar(x::Int8 | UInt8, y::Int16 | UInt16, z::(Int8 | 
 julia> methods(@orunion (x::Int8 | UInt8)->5)
 # 1 method for anonymous function "#35":
  [1] (::var"#35#36")(x::Union{Int8, UInt8})
+```
+
+### `@∨` and `OrUnion.@|` are aliases for `@orunion`
+
+`@∨`, `@\vee[TAB]` and `OrUnion.@|` are provided as aliases for `@orunion`. `@∨` is exported. `OrUnion.@|` is not exported.
+
+To create your own alias, do `const var"@myalias" = var"@orunion"`.
+
+Here is some example usage of the macro aliases.
+
+```julia
+julia> using OrUnions
+
+julia> @∨ function foo(x::Int ∨ UInt, y::Float64 ∨ Nothing) end
+foo (generic function with 1 method)
+
+julia> methods(foo)
+# 1 method for generic function "foo" from Main:
+ [1] foo(x::Union{Int64, UInt64}, y::Union{Nothing, Float64})
+     @ REPL[2]:1
+
+julia> using OrUnions: @|
+
+julia> @| function bar(x::Int | UInt, y::Float64 | Nothing) end
+bar (generic function with 1 method)
+
+julia> methods(bar)
+# 1 method for generic function "bar" from Main:
+ [1] bar(x::Union{Int64, UInt64}, y::Union{Nothing, Float64})
+     @ REPL[5]:1
+
+julia> @| struct Foo{T <: Number | Signed}
+           x::T | Nothing
+       end
+
+julia> fieldtype(Foo{Int}, 1)
+Union{Nothing, Int64}
+
+julia> @macroexpand @| struct Foo{T <: Number | Signed}
+           x::T | Nothing
+       end
+:(struct Foo{T <: Union{Signed, Number}}
+      #= REPL[6]:2 =#
+      x::Union{Nothing, T}
+  end)
 ```
 
 ## Using `OrUnion.:|`

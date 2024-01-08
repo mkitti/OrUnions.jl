@@ -1,5 +1,5 @@
 using OrUnions
-using OrUnions: |
+using OrUnions: |, @|
 using Test
 
 @testset "OrUnions.jl" begin
@@ -34,6 +34,34 @@ using Test
     @test methods(@orunion((x::Int8 | Int16 | Int32 | Int64)->x)).ms[1].sig.parameters[2] == Int8 ∨ Int16 ∨ Int32 ∨ Int64
     @test methods(@orunion((x::Int8 | Int16, y::Int32 | Int64)->x)).ms[1].sig.parameters[2] == Int8 ∨ Int16
     @test methods(@orunion((x::Int8 | Int16, y::Int32 | Int64)->x)).ms[1].sig.parameters[3] == Int32 ∨ Int64
+
+    struct MyType{T <: AbstractVector}
+        x::(T | Nothing)
+    end
+    @test fieldtype(MyType{Vector{Int}},1) == Union{Vector{Int}, Nothing}
+    struct MyType2{T <: AbstractVector}
+        x::(Nothing ∨ T)
+    end
+    @test fieldtype(MyType2{Vector{Int}},1) == Union{Vector{Int}, Nothing}
+    struct MyType3{T <: AbstractVector, N <: Number}
+        x::(Nothing | T | N)
+        y::(Nothing ∨ T ∨ N)
+        z::(T | Nothing ∨ N)
+    end
+    @test fieldtype(MyType3{Vector{Int}, Float64},1) == Union{Vector{Int}, Nothing, Float64}
+    @test fieldtype(MyType3{Vector{Int}, Float64},2) == Union{Vector{Int}, Nothing, Float64}
+    @test fieldtype(MyType3{Vector{Int}, Float64},3) == Union{Vector{Int}, Nothing, Float64}
+    @| struct MyType4{T <: Number | Integer}
+        x::T | UInt
+        y::T | Float64
+        z::T | Nothing
+        MyType4() = new{Int}(1,1,1)
+    end
+    @test fieldtype(MyType4{Int}, 1) == Union{Int, UInt}
+    @test fieldtype(MyType4{Int}, 2) == Union{Int, Float64}
+    @test fieldtype(MyType4{Int}, 3) == Union{Int, Nothing}
+    @test |(Int) == Int
+    @test ∨(Float64) == Float64
 
     # TODO:
     # @test methods(@orunion((x::Int8 | Int16)::(Int8 ∨ Int16) -> x))[1].sig.parameters[2] == Int8 ∨ Int16
