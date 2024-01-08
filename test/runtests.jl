@@ -43,6 +43,16 @@ using Test
         x::(Nothing ∨ T)
     end
     @test fieldtype(MyType2{Vector{Int}},1) == Union{Vector{Int}, Nothing}
+    struct MyType3{T <: AbstractVector, N <: Number}
+        x::(Nothing | T | N)
+        y::(Nothing ∨ T ∨ N)
+        z::(T | Nothing ∨ N)
+    end
+    @test fieldtype(MyType3{Vector{Int}, Float64},1) == Union{Vector{Int}, Nothing, Float64}
+    @test fieldtype(MyType3{Vector{Int}, Float64},2) == Union{Vector{Int}, Nothing, Float64}
+    @test fieldtype(MyType3{Vector{Int}, Float64},3) == Union{Vector{Int}, Nothing, Float64}
+    @test |(Int) == Int
+    @test ∨(Float64) == Float64
 
     # TODO:
     # @test methods(@orunion((x::Int8 | Int16)::(Int8 ∨ Int16) -> x))[1].sig.parameters[2] == Int8 ∨ Int16

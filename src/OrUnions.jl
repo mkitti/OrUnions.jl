@@ -2,7 +2,8 @@ module OrUnions
 
 using MacroTools
 
-export @orunion, ∨
+# Export some rare symbols for convenience, do `using OrUnions: OrUnions` to just import the package name
+export @orunion, ∨, @∨
 
 const TypeOrTypeVar = Union{Type, TypeVar}
 
@@ -16,19 +17,27 @@ const TypeOrTypeVar = Union{Type, TypeVar}
 
 """
     @orunion
+    @∨
+    OrUnions.@|
 
 Macro that inverts the order of precedence between `::` and the logical "or" operators, `|` and `∨`.
-* `@orunion x::T1 | T2` is turned into `x::(T2 | T1)`
-* `@orunion x::T1 | T2 | T3` is turned into `x::(T3 | T2 | T1)`
-* `@orunion x::T1 | T2 | T3 | ... | TN` is turned into `x::(TN | ... | T3 | T2 | T1)`
-* `@orunion function f(x::T1 | T2)` is turned into `function f(x::(T2 | T1)`
-* `@orunion function f(x::T1 | T2 | T3)` is turned into `function f(x::(T3 | T2 | T1)`
-* `@orunion f(x::T1 | T2) = nothing` is turned into `f(x::(T2 | T1)) = nothing`
+* `@orunion x::T1 | T2` is turned into `x::Union{T2, T1}`
+* `@orunion x::T1 | T2 | T3` is turned into `x::Union{T3, T2, T1}`
+* `@orunion x::T1 | T2 | T3 | ... | TN` is turned into `x::Union{TN, ..., T3, T2, T1})`
+* `@orunion function f(x::T1 | T2)` is turned into `function f(x::Union{T2, T1})`
+* `@orunion function f(x::T1 | T2 | T3)` is turned into `function f(x::Union{T3, T2, T1})`
+* `@orunion f(x::T1 | T2) = nothing` is turned into `f(x::Union{T2,T1}) = nothing`
+* `@orunion (x::T1 | T2) -> nothing` is turned into `x::Union{T2, T1} -> nothing`
 """
 macro orunion(ex)
     esc(macro_orunion!(ex))
 end
 
+# Aliases of @orunion
+const var"@∨" = var"@orunion"
+const var"@|" = var"@orunion"
+
+## Dispatch on ex.head
 function macro_orunion!(ex)
     macro_orunion!(Val(ex.head), ex)
 end
@@ -65,6 +74,7 @@ function macro_orunion!(::Val{:(::)}, ex)
     unionize_arg!(ex)
 end
 
+# (arg::T1 | T2 -> ...) transforms to arg::Union{T2 | T1} -> ...
 function macro_orunion!(::Val{:(->)}, ex)
     if ex.args[1].head == :call
         ex.args[1] = unionize_arg!(ex.args[1])
@@ -79,6 +89,7 @@ function macro_orunion!(::Val{:(->)}, ex)
     end
 end
 
+# arg::T1 | T2 | ... | TN transforms to arg::Union{TN, ..., T2, T1}
 function unionize_arg!(ex)
     if ex.head == :(::)
         _, ex.args[end] = unionize_or!(ex.args[end])
@@ -104,6 +115,7 @@ function unionize_arg!(ex)
     return ex
 end
 
+# T1 | T2 | T3 | ... TN transforms to Union{TN, ..., T3, T2, T1}
 function unionize_or!(ex::Expr)
     types = Symbol[]
     while ex isa Expr && ex.head == :call && (ex.args[1] == :| || ex.args[1] == :∨)
@@ -129,7 +141,7 @@ Logical "or" applied to types to form a `Union`. `∨` is exported from OrUnions
 
 """
     OrUnion.:|(t::Union{Type,TypeVar}, types::Union{Type,TypeVar}...)
-    a::Union{Type,TypeVar} OrUnion.:| b::Union{Type,TypeVar}
+    a::Union{Type,TypeVar} | b::Union{Type,TypeVar}
 
 Logical "or" applied to types to form a `Union` and forwards to `Base.:|`
 which implements bitwise "or" for numerical types.

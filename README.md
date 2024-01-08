@@ -112,6 +112,36 @@ julia> methods(@orunion (x::Int8 | UInt8)->5)
  [1] (::var"#35#36")(x::Union{Int8, UInt8})
 ```
 
+### `@∨` and `OrUnion.@|` are aliases for `@orunion`
+
+`@∨`, `@\vee[TAB]` and `OrUnion.@|` are provided as aliases for `@orunion`. `@∨` is exported. `OrUnion.@|` is not exported.
+
+To create your own alias, do `const var"@myalias" = var"@orunion"`.
+
+Here is some example usage of the macro aliases.
+
+```julia
+julia> using OrUnions
+
+julia> @∨ function foo(x::Int ∨ UInt, y::Float64 ∨ Nothing) end
+foo (generic function with 1 method)
+
+julia> methods(foo)
+# 1 method for generic function "foo" from Main:
+ [1] foo(x::Union{Int64, UInt64}, y::Union{Nothing, Float64})
+     @ REPL[2]:1
+
+julia> using OrUnions: @|
+
+julia> @| function bar(x::Int | UInt, y::Float64 | Nothing) end
+bar (generic function with 1 method)
+
+julia> methods(bar)
+# 1 method for generic function "bar" from Main:
+ [1] bar(x::Union{Int64, UInt64}, y::Union{Nothing, Float64})
+     @ REPL[5]:1
+```
+
 ## Using `OrUnion.:|`
 
 While `OrUnion.:|` is not exported, the definition can be used in your current module's namespace before `|` is used by explicitly by `using` the symbol as follows.
