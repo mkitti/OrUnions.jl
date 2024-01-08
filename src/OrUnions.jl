@@ -38,8 +38,32 @@ const var"@∨" = var"@orunion"
 const var"@|" = var"@orunion"
 
 ## Dispatch on ex.head
-function macro_orunion!(ex)
+function macro_orunion!(arg)
+    return arg
+end
+
+function macro_orunion!(ex::Expr)
     macro_orunion!(Val(ex.head), ex)
+end
+
+function macro_orunion!(::Val, ex)
+    return ex
+end
+
+function macro_orunion!(::Val{:struct}, ex)
+    # Map type parameter declarations
+    if ex isa Expr && ex.args[2].head == :curly
+        for i in eachindex(ex.args[2].args)[2:end]
+            if ex.args[2].args[i] isa Expr
+                _, ex.args[2].args[i].args[2] = unionize_or!(ex.args[2].args[i].args[2])
+            end
+        end
+    end
+    # Map fields and constructors
+    for i in eachindex(ex.args[3].args)
+        ex.args[3].args[i] = macro_orunion!(ex.args[3].args[i])
+    end
+    return ex
 end
 
 function macro_orunion!(::Val{:function}, ex)

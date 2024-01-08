@@ -1,5 +1,5 @@
 using OrUnions
-using OrUnions: |
+using OrUnions: |, @|
 using Test
 
 @testset "OrUnions.jl" begin
@@ -51,6 +51,15 @@ using Test
     @test fieldtype(MyType3{Vector{Int}, Float64},1) == Union{Vector{Int}, Nothing, Float64}
     @test fieldtype(MyType3{Vector{Int}, Float64},2) == Union{Vector{Int}, Nothing, Float64}
     @test fieldtype(MyType3{Vector{Int}, Float64},3) == Union{Vector{Int}, Nothing, Float64}
+    @| struct MyType4{T <: Number | Integer}
+        x::T | UInt
+        y::T | Float64
+        z::T | Nothing
+        MyType4() = new{Int}(1,1,1)
+    end
+    @test fieldtype(MyType4{Int}, 1) == Union{Int, UInt}
+    @test fieldtype(MyType4{Int}, 2) == Union{Int, Float64}
+    @test fieldtype(MyType4{Int}, 3) == Union{Int, Nothing}
     @test |(Int) == Int
     @test ∨(Float64) == Float64
 
