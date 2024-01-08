@@ -35,6 +35,15 @@ using Test
     @test methods(@orunion((x::Int8 | Int16, y::Int32 | Int64)->x)).ms[1].sig.parameters[2] == Int8 ∨ Int16
     @test methods(@orunion((x::Int8 | Int16, y::Int32 | Int64)->x)).ms[1].sig.parameters[3] == Int32 ∨ Int64
 
+    struct MyType{T <: AbstractVector}
+        x::(T | Nothing)
+    end
+    @test fieldtype(MyType{Vector{Int}},1) == Union{Vector{Int}, Nothing}
+    struct MyType2{T <: AbstractVector}
+        x::(Nothing ∨ T)
+    end
+    @test fieldtype(MyType2{Vector{Int}},1) == Union{Vector{Int}, Nothing}
+
     # TODO:
     # @test methods(@orunion((x::Int8 | Int16)::(Int8 ∨ Int16) -> x))[1].sig.parameters[2] == Int8 ∨ Int16
 

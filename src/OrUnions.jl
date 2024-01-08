@@ -4,12 +4,27 @@ using MacroTools
 
 export @orunion, ∨
 
-@inline ∨(@nospecialize(t::Type), @nospecialize(types::Type...)) = Union{t, types...}
-@inline |(@nospecialize(t::Type), @nospecialize(types::Type...)) = Union{t, types...}
+const TypeOrTypeVar = Union{Type, TypeVar}
+
+@inline ∨(@nospecialize(t::Type), @nospecialize(types::TypeOrTypeVar...)) = Union{t, types...}
+@inline ∨(@nospecialize(t::TypeVar), @nospecialize(types::TypeOrTypeVar...)) = Union{t, types...}
+@inline |(@nospecialize(t::Type), @nospecialize(types::TypeOrTypeVar...)) = Union{t, types...}
+@inline |(@nospecialize(t::TypeVar), @nospecialize(types::TypeOrTypeVar...)) = Union{t, types...}
 
 # Fallback method forwarding
 @inline |(@nospecialize(args...)) = Base.:|(args...)
 
+"""
+    @orunion
+
+Macro that inverts the order of precedence between `::` and the logical "or" operators, `|` and `∨`.
+* `@orunion x::T1 | T2` is turned into `x::(T2 | T1)`
+* `@orunion x::T1 | T2 | T3` is turned into `x::(T3 | T2 | T1)`
+* `@orunion x::T1 | T2 | T3 | ... | TN` is turned into `x::(TN | ... | T3 | T2 | T1)`
+* `@orunion function f(x::T1 | T2)` is turned into `function f(x::(T2 | T1)`
+* `@orunion function f(x::T1 | T2 | T3)` is turned into `function f(x::(T3 | T2 | T1)`
+* `@orunion f(x::T1 | T2) = nothing` is turned into `f(x::(T2 | T1)) = nothing`
+"""
 macro orunion(ex)
     esc(macro_orunion!(ex))
 end
@@ -101,5 +116,32 @@ function unionize_or!(ex::Expr)
     return ex, Expr(:curly, :Union, types...)
 end
 unionize_or!(ex::Symbol) = ex, ex
+
+"""
+    ∨(t::Union{Type,TypeVar}, types::Union{Type,TypeVar}...)
+    a::Union{Type,TypeVar} ∨ b::Union{Type,TypeVar}
+
+Logical "or" applied to types to form a `Union`. `∨` is exported from OrUnions.
+* `∨(t1, t2, ...) === Union{t1, t2, ...}
+* `a ∨ b === Union{a,b}`
+"""
+∨
+
+"""
+    OrUnion.:|(t::Union{Type,TypeVar}, types::Union{Type,TypeVar}...)
+    a::Union{Type,TypeVar} OrUnion.:| b::Union{Type,TypeVar}
+
+Logical "or" applied to types to form a `Union` and forwards to `Base.:|`
+which implements bitwise "or" for numerical types.
+
+For `Type` or `TypeVar`, the following is true.
+* `|(t1, t2, ...) === Union{t1, t2, ...}
+* `a | b === Union{a,b}`
+
+For all combinations of types, the implementation fallsback to `Base.:|` via forwarding.
+* `|(a, b, ...) === Base.:|(a, b, ...)`
+* `a | b === Base.:|(a, b)`
+"""
+|
 
 end # module OrUnions
